@@ -1,5 +1,4 @@
 package com.dsadeghi;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -7,26 +6,65 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
-public class DoubleLinkedList<T> {
+public class DoubleLinkedList<T> implements List<T>{
 
-    private DLLNode<T> head;
-
+    private DLLNode head;
+    private DLLNode tail;
+    private boolean hasMutated;
+    /**
+     * Gets the size of the linked list
+     * @return
+     */
     public int size() {
+        if (head == null) {
+            return 0;
+        }
         int size = 0;
-
-        for (DLLNode<T> n = head; n.next() != null; n = n.next()) {
+        DLLNode temp = head;
+        while (temp != null) {
             size++;
+            temp = temp.next();
         }
 
         return size;
     }
 
-    public boolean isEmpty() {
-        return (size() == 0);
+    public DLLNode head() {
+        return head;
     }
 
+    public DLLNode tail() {
+        if (!hasMutated) {
+            return tail;
+        }
+
+        if (size() == 0 || size() == 1) {
+            tail = head;
+        } else {
+            tail = head;
+            while (tail.next != null) {
+                tail = tail.next();
+            }
+        }
+
+        return tail;
+    }
+
+    /**
+     * Checks if linked list is empty
+     * @return
+     */
+    public boolean isEmpty() {
+        return (head == null);
+    }
+
+    /**
+     * Checks if linked list contains the given object
+     * @param o
+     * @return
+     */
     public boolean contains(Object o) {
-        for (DLLNode<T> n = head; n.next() != null; n = n.next()) {
+        for (DLLNode n = head; n != null; n = n.next()) {
             if (o.equals(n.data)) {
                 return true;
             }
@@ -42,7 +80,7 @@ public class DoubleLinkedList<T> {
     public Object[] toArray() {
         Object[] array = new Object[size()];
 
-        DLLNode<T> n = head;
+        DLLNode n = head;
         for (int i = 0; i < size(); i++) {
             array[i] = n;
             n = n.next();
@@ -51,10 +89,15 @@ public class DoubleLinkedList<T> {
         return array;
     }
 
+    /**
+     * Appends the element to the end of the list
+     * @param e
+     * @return
+     */
     public boolean add(T e) {
-        ListIterator<T> iter = this.listIterator(size());
-        iter.next(); //As for why we have to call next rather than starting at size() + 1, see quirk in add() implementation
+        ListIterator<T> iter = listIterator(size());
         iter.add(e);
+        hasMutated = true;
         return true;
     }
 
@@ -109,11 +152,17 @@ public class DoubleLinkedList<T> {
     }
 
     public T get(int index) {
+        if (index < 0 || index >= size()) {
+            throw new IndexOutOfBoundsException();
+        }
         ListIterator<T> iter = this.listIterator(index);
         return iter.next();
     }
 
     public T set(int index, T element) {
+        if (index >= size()) {
+            throw new IndexOutOfBoundsException();
+        }
         ListIterator<T> iter = this.listIterator(index);
         T prevElement = iter.next();
         iter.remove();
@@ -129,10 +178,14 @@ public class DoubleLinkedList<T> {
 
     public T remove(int index) {
         ListIterator<T> iter = this.listIterator(index);
-        T data = iter.next();
+        if (!iter.hasNext()) {
+            throw new IndexOutOfBoundsException();
+        }
+
+        T returnValue = iter.next();
         iter.remove();
 
-        return data;
+        return returnValue;
     }
 
     public int indexOf(Object o) {
@@ -148,12 +201,12 @@ public class DoubleLinkedList<T> {
 
     public int lastIndexOf(Object o) {
         //Am I supposed to be using DLLIterator here? What was the point of making it if not
-        //Also when it calls methods, will it call the ones I defined or will it use the ones in java.util
-        ListIterator<T> iter = this.listIterator();
-        int index = 0;
-        while (iter.hasNext()) {
-            if (o.equals(iter.next())) {
-                index = iter.nextIndex() - 1; //Is this really the best way to do this?
+        ListIterator<T> iter = this.listIterator(size());
+        int index = -1;
+        while (iter.hasPrevious()) {
+            if (o.equals(iter.previous())) {
+                index = iter.nextIndex();
+                break;//Is this really the best way to do this?
             }
         }
 
@@ -174,10 +227,10 @@ public class DoubleLinkedList<T> {
         if (fromIndex == toIndex) {
             return new ArrayList<T>();
         }
-        if (fromIndex < 0 || fromIndex > size()) {
+        if (fromIndex < 0 || fromIndex >= size()) {
             throw new IndexOutOfBoundsException();
         }
-        if (toIndex < 0 || toIndex > size()) {
+        if (toIndex < 0 || toIndex >= size()) {
             throw new IndexOutOfBoundsException();
 
         }
@@ -192,66 +245,83 @@ public class DoubleLinkedList<T> {
         return list;
     }
 
+    public String toString() {
+        String str = "[";
+
+        for (int i = 0; i < size(); i++) {
+            str += get(i);
+            if (i != size() - 1) {
+                str += ", ";
+            }
+        }
+        str += "]";
+        return str;
+    }
 
 
 
 
 
-
-
-
-
-
-
-    private class DLLNode<E> {
+    private class DLLNode {
 
         /*
             FIELDS
         */
-        public E data;
-        private DLLNode<E> next;
-        private DLLNode<E> prev;
-    
+        public T data;
+        private DLLNode next;
+        private DLLNode prev;
+
 
         /*
             CONSTRUCTORS
         */
-    
-        public DLLNode(E data, DLLNode<E> next, DLLNode<E> prev) {
+
+        public DLLNode(DLLNode prev, T data, DLLNode next) {
             this.data = data;
             this.next = next;
             this.prev = prev;
         }
-    
+
+        public DLLNode(T data) {
+            this.data = data;
+        }
+
         /**
          * Returns the reference to the next node linked to the calling node
          * @return The next node
          */
-        public DLLNode<E> next() {
+        public DLLNode next() {
             return next;
         }
-    
+
         /**
          * Returns the reference to the previous node linked to the calling node
          * @return The previous node
          */
-        public DLLNode<E> prev() {
+        public DLLNode prev() {
             return prev;
         }
     }
-    
+
+    /**
+     * Access fields using methods when available.
+     * Invariant: Iterator's index must not
+     */
     private class DLLIterator implements ListIterator<T> {
         //Holds the reference to the next element
-        private DLLNode<T> nextNode;
+        private DLLNode nextNode;
         //Whenever a method returns a node, it is cached in this variable
-        private DLLNode<T> cachedNode;
-        //Holds the index assigned to the next element
+        private DLLNode cachedNode;
         private int index;
-        private boolean canMutateList;
+        private boolean isIncremented;
+
+        //Whenever the size of the array is changed,
+        // private boolean sizeChanged;
 
         public DLLIterator() {
             nextNode = head;
             index = 0;
+            cachedNode = null;
         }
 
         //Constructs an iterator positioned just before the element at the given index
@@ -272,6 +342,14 @@ public class DoubleLinkedList<T> {
             return (nextNode != null);
         }
 
+        public int index() {
+            return index;
+        }
+
+        /**
+         * Advances the iterator's index by 1 and returns the next node that it passes over
+         * @return
+         */
         @Override
         public T next() {
             //Check if a next node exists first
@@ -279,17 +357,16 @@ public class DoubleLinkedList<T> {
                 throw new NoSuchElementException("There is no next node");
             }
 
-            T data = nextNode.data;
             cachedNode = nextNode;
             nextNode = nextNode.next();
-            canMutateList = true;
             index++;
-            return data;
+            isIncremented = true;
+            return cachedNode.data;
         }
 
         @Override
         public boolean hasPrevious() {
-            return (nextNode.prev() != null);
+            return (index != 0/*(nextNode == null && size() != 0) || nextNode.prev() != null*/);
         }
 
         @Override
@@ -297,73 +374,118 @@ public class DoubleLinkedList<T> {
             if (!hasPrevious()) {
                 throw new NoSuchElementException("There is no previous node");
             }
-
-            T data = nextNode.prev.data;
-            nextNode = nextNode.prev();
-            canMutateList = true;
+            if (!hasNext()) {
+                cachedNode = tail();
+            } else {
+                cachedNode = nextNode.prev();
+            }
+            nextNode = cachedNode;
             index--;
-            return data;
+            isIncremented = false;
+            return cachedNode.data;
         }
 
         @Override
         public int nextIndex() {
-            if (!hasNext()) {
-                return size();
-            } else {
-                return index + 1;
-            }
+            return index;
         }
 
         @Override
         public int previousIndex() {
-            if (!hasPrevious()) {
-                return 0;
-            } else {
-                return index - 1;
-            }
+            return index - 1;
         }
 
+        /**
+         * Only assign head and nextNode;
+         */
         @Override
         public void remove() {
-            if (!canMutateList) {
+            tail();
+            if (cachedNode == null) {
                 throw new IllegalStateException("Remove() must be preceded by next() or previous()");
             }
 
-            cachedNode.prev.next = cachedNode.next();
-            canMutateList = false;
-            index--;
+            if (size() == 1) {                    //Single node case
+                head = null;
+                nextNode = null;
+                index = 0;
+            } else if (cachedNode == head()) {    //Head node case
+                nextNode = cachedNode.next();
+                nextNode.prev = null;
+                head = nextNode;
+                if (isIncremented) {
+                    index--;
+                }
+            } else if (cachedNode == tail()) {    //Tail node case
+                cachedNode.prev.next = null;
+                if (isIncremented) {
+                    index--;
+                }
+            } else {                               //Middle node case
+                cachedNode.prev.next = cachedNode.next();
+                cachedNode.next.prev = cachedNode.prev();
+                if (isIncremented) {
+                    index--;
+                }
+            }
+
+            cachedNode = null;
         }
 
         @Override
         public void set(T t) {
-            if (!canMutateList) {
+            if (cachedNode == null) {
                 throw new IllegalStateException("set() must be preceded by next() or previous()");
-            }
-            if (t == null) {
-                throw new IllegalArgumentException("Data cannot be null");
             }
 
             cachedNode.data = t;
-            canMutateList = false;
+            cachedNode = null; //Maybe?
         }
 
+        /**
+         * Inserts the element in a new node immediately after where the iterator is indexed at
+         * @param t
+         */
         @Override
         public void add(T t) {
-            
-            if (t == null) {
-                throw new IllegalArgumentException();
+            tail();
+
+            if (isEmpty()) {                          // If list is empty
+                head = new DLLNode(t);
+            } else if (nextNode == head) {                // Else if we are at the head of the list
+                DLLNode newNode = new DLLNode(t);
+                newNode.next = nextNode;
+                nextNode.prev = newNode;
+                newNode.prev = null;
+                head = newNode;
+            } else if (nextNode == null) {                    // Else if we are at the tail of the list
+                DLLNode newNode = new DLLNode(t);
+                tail.next = newNode;
+                newNode.prev = tail;
+                tail = newNode;
+            } else {
+                DLLNode newNode = new DLLNode(t);
+                newNode.prev = nextNode.prev;
+                nextNode.prev.next = newNode;
+                newNode.next = nextNode;
+                nextNode.prev = newNode;
             }
 
-            if (size() == 0) {                          // If list is empty
-                head = new DLLNode<T>(t, null, null);
-            } else if (!hasPrevious()) {                // Else if we are at the head of the list
-                nextNode.prev = new DLLNode<T>(t, nextNode, null);
-            } else if (!hasNext()) {                    // Else if we are at the tail of the list
-                cachedNode.next = new DLLNode<T>(t, null, cachedNode);  //What happens here if we want to add at our initial position and haven't even called next() yet
-            } else {
-                cachedNode.next = new DLLNode<T>(t, nextNode, cachedNode);
-            }
+            index++;
+            cachedNode = null;
         }
 
+    }
+
+    @Override
+    public <E> E[] toArray(E[] a) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+        // TODO Auto-generated method stub
+        return false;
     }
 }
